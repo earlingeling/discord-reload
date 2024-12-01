@@ -6,8 +6,8 @@ This project is a Discord bot that monitors server statuses and allows users to 
 
 - **Automated Status Updates**: Posts server statuses to a Discord channel every 30 minutes.
 - **Interactive Controls**:
-  - **Reload Servers**: Provides buttons to reload individual servers.
-  - **Refresh Status**: Offers a button to manually refresh the server statuses.
+    - **Reload Servers**: Provides buttons to reload individual servers.
+    - **Refresh Status**: Offers a button to manually refresh the server statuses.
 - **Clean Channel Management**: Edits the last status message instead of sending new ones to keep the channel uncluttered.
 
 ## Prerequisites
@@ -25,13 +25,20 @@ git clone https://github.com/earlingeling/discord-reload.git
 cd discord-reload
 ```
 
-### 2. Install Dependencies
+### 2. Create a Virtual Environment (Linux)
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configure Environment Variables
+### 4. Configure Environment Variables
 
 Create a `.env` file in the root directory and add the following variables:
 
@@ -43,9 +50,17 @@ PASSWORD=your_service_password
 SERVICE_LINK=your_service_link
 ```
 
-Alternatively, use set the environment variables directly
+Alternatively, set the environment variables directly:
 
-### 4. Run the Bot
+```bash
+export DISCORD_TOKEN=your_discord_bot_token
+export CHANNEL_ID=your_discord_channel_id
+export USERNAME=your_service_username
+export PASSWORD=your_service_password
+export SERVICE_LINK=your_service_link
+```
+
+### 5. Run the Bot
 
 ```bash
 python app.py
