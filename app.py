@@ -1,5 +1,7 @@
+import datetime
 import os
 import asyncio
+import discord
 from discord.ext import commands, tasks
 from discord import Embed, ButtonStyle
 from discord.ui import View, Button
@@ -11,20 +13,36 @@ from logger_config import logger
 DISCORD_TOKEN = os.getenv('DISCORD_TOKEN')
 CHANNEL_ID = int(os.getenv('CHANNEL_ID'))
 
+intents = discord.Intents.default()
+intents.messages = True
+intents.guilds = True
+intents.message_content = True
+
 # Initialize the bot
-bot = commands.Bot(command_prefix='!')
+bot = commands.Bot(command_prefix='!', intents=intents)
 
 # Load or create a session
 session = load_session()
 
+# Global variable to keep track of the status message
+status_message = None
+
 @bot.event
 async def on_ready():
+    global status_message
     logger.info(f'Logged in as {bot.user}')
+    channel = bot.get_channel(CHANNEL_ID)
+    # Fetch the last message sent by the bot
+    async for message in channel.history(limit=50):
+        if message.author == bot.user:
+            status_message = message
+            break
     # Start the background task
     post_status.start()
 
 @tasks.loop(minutes=30)
 async def post_status():
+    global status_message
     channel = bot.get_channel(CHANNEL_ID)
     try:
         # Ensure session is valid
@@ -38,7 +56,7 @@ async def post_status():
         embed = Embed(title='Server Status')
         for server in stats:
             embed.add_field(
-                name=f"{server['name']} (ID: {server['id']})",
+                name=f"{server['name']}",
                 value=(
                     f"Open Connections: {server['open_connections']}\n"
                     f"Total Streams: {server['total_streams']}\n"
@@ -48,6 +66,9 @@ async def post_status():
                 ),
                 inline=False
             )
+        # Add a "last updated" field with the current time
+        embed.set_footer(text='Last Updated: ' + datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
         # Create buttons for each server
         view = View()
         for server in stats:
@@ -64,8 +85,11 @@ async def post_status():
             custom_id="refresh_status"
         )
         view.add_item(refresh_button)
-        # Send message
-        await channel.send(embed=embed, view=view)
+        # Edit the existing message or send a new one
+        if status_message is None:
+            status_message = await channel.send(embed=embed, view=view)
+        else:
+            await status_message.edit(embed=embed, view=view)
     except Exception as e:
         logger.error(f'Error posting status: {e}')
 
@@ -75,14 +99,20 @@ async def on_interaction(interaction):
     if custom_id:
         if custom_id.startswith('reload_'):
             server_id = custom_id.split('_')[1]
+            await interaction.response.send_message('Reloading...', ephemeral=True)
             try:
                 result = reload_server(session, server_id)
-                await interaction.response.send_message(f'Reload result: {result}', ephemeral=True)
+                await post_status()
+                await interaction.followup.send(f'Server {server_id} reloaded successfully.', ephemeral=True)
             except Exception as e:
-                await interaction.response.send_message(f'Error reloading server {server_id}: {e}', ephemeral=True)
+                await interaction.followup.send(f'Error reloading server {server_id}: {e}', ephemeral=True)
         elif custom_id == 'refresh_status':
-            await post_status()
-            await interaction.response.send_message('Status refreshed.', ephemeral=True)
+            await interaction.response.send_message('Refreshing status...', ephemeral=True)
+            try:
+                await post_status()
+                await interaction.followup.send('Status refreshed.', ephemeral=True)
+            except Exception as e:
+                await interaction.followup.send(f'Error refreshing status: {e}', ephemeral=True)
 
 # Run the bot
 bot.run(DISCORD_TOKEN)
