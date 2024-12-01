@@ -1,0 +1,5 @@
+#add venv and pycahce to gitignore and pickle files
+venv/
+__pycache__/
+*.pkl
+```
