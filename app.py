@@ -23,6 +23,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 # Load or create a session
 session = load_session()
+logger.info('Session loaded with proxies: ' + str(session.proxies))
 
 # Global variable to keep track of the status message
 status_message = None
