@@ -4,7 +4,6 @@ import pickle
 
 SESSION_FILE = 'session.pkl'
 
-# Proxies enabled?
 PROXY_ENABLED = True
 
 def load_session():
